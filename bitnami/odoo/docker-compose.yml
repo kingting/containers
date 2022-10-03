@@ -1,4 +1,4 @@
-version: '2'
+version: '3'
 services:
   postgresql:
     image: docker.io/bitnami/postgresql:13
@@ -12,7 +12,7 @@ services:
   odoo:
     image: docker.io/bitnami/odoo:15
     ports:
-      - '80:8069'
+      - '8069:8069'
     volumes:
       - 'odoo_data:/bitnami/odoo'
     depends_on:
@@ -24,6 +24,23 @@ services:
       - ODOO_DATABASE_PORT_NUMBER=5432
       - ODOO_DATABASE_USER=bn_odoo
       - ODOO_DATABASE_NAME=bitnami_odoo
+    labels:
+      - traefik.enable=true
+      - traefik.http.routers.odoo.rule=Host(`odoo.localhost`)
+      - traefik.http.services.odoo.loadBalancer.server.port=8069
+  traefik:
+    # The official v2 Traefik docker image
+    image: traefik:v2.5
+    # Enables the web UI and tells Traefik to listen to docker
+    command: --api.insecure=true --providers.docker
+    ports:
+      # The HTTP port
+      - "80:80"
+      # The Web UI (enabled by --api.insecure=true)
+      - "8080:8080"
+    volumes:
+      # So that Traefik can listen to the Docker events
+      - /var/run/docker.sock:/var/run/docker.sock
 volumes:
   postgresql_data:
     driver: local
